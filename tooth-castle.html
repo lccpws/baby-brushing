@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>牙齿城堡大冒险 🏰</title>
+<style>
+  /* ================= 设计基调 =================
+     主题：糖果小怪占领牙齿城堡，宝宝刷牙夺回城堡
+     色板：天空奶蓝 / 云朵白 / 糖果粉 / 蜜桃橙 / 薄荷绿
+     字体：圆体优先，胖乎乎无攻击性
+  */
+  :root{
+    --ink:#4a3550;
+    --ink-soft:#8f7a9b;
+    --candy:#ff7ba9;
+    --peach:#ffb24d;
+    --mint:#5ed6a2;
+    --sky1:#cdeeff;
+    --sky2:#ffe9f3;
+    --card:#ffffff;
+    --shadow:0 18px 45px rgba(110,70,140,.18);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;min-height:100%;}
+  body{
+    font-family:"Yuanti SC","YouYuan","PingFang SC","Baloo 2","Comic Sans MS",system-ui,sans-serif;
+    background:linear-gradient(165deg,var(--sky1),var(--sky2));
+    min-height:100vh;padding:14px;
+    display:flex;align-items:center;justify-content:center;
+    user-select:none;-webkit-user-select:none;
+    overflow-x:hidden;
+  }
+  .app{
+    width:100%;max-width:430px;
+    background:var(--card);border-radius:34px;
+    box-shadow:var(--shadow);
+    padding:24px 20px 28px;
+    display:flex;flex-direction:column;align-items:center;gap:14px;
+    position:relative;overflow:hidden;
+  }
+  .screen{display:none;width:100%;flex-direction:column;align-items:center;gap:14px;}
+  .screen.active{display:flex;}
+
+  /* ---------- 主页 ---------- */
+  .logo-row{display:flex;align-items:center;gap:10px;}
+  .logo-tooth{
+    width:52px;height:52px;flex:none;
+    animation:bob 2.6s ease-in-out infinite;
+  }
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-7px) rotate(4deg)}}
+  h1{font-size:27px;margin:0;color:var(--ink);letter-spacing:1px;}
+  h1 small{display:block;font-size:13px;color:var(--ink-soft);font-weight:400;letter-spacing:2px;margin-top:2px;}
+  .week-tag{
+    display:inline-flex;align-items:center;gap:6px;
+    background:linear-gradient(90deg,#ffd9e8,#fff3d1);
+    color:#a04b70;font-size:13px;font-weight:700;
+    border-radius:999px;padding:6px 16px;
+  }
+  .streak-card{
+    width:100%;display:flex;align-items:center;gap:12px;
+    background:linear-gradient(120deg,#fff5e9,#ffe9f0);
+    border-radius:22px;padding:12px 16px;
+  }
+  .streak-fire{font-size:34px;filter:drop-shadow(0 3px 4px rgba(255,120,0,.35));animation:flick 1.1s ease-in-out infinite;}
+  @keyframes flick{0%,100%{transform:scale(1) rotate(-3deg)}50%{transform:scale(1.12) rotate(3deg)}}
+  .streak-num{font-size:30px;font-weight:800;color:#ff8a3d;line-height:1;}
+  .streak-num i{font-style:normal;font-size:14px;color:var(--ink-soft);font-weight:700;margin-left:3px;}
+  .streak-label{font-size:12px;color:var(--ink-soft);margin-top:3px;}
+  .shelf{
+    width:100%;background:#f6f1fb;border-radius:22px;padding:12px;
+    display:flex;flex-direction:column;gap:8px;
+  }
+  .shelf-title{font-size:13px;color:var(--ink-soft);display:flex;justify-content:space-between;align-items:center;}
+  .shelf-title b{color:var(--ink);font-size:15px;}
+  .shelf-row{display:flex;gap:8px;overflow-x:auto;padding:4px 2px;scrollbar-width:none;}
+  .shelf-row::-webkit-scrollbar{display:none;}
+  .pal{
+    flex:none;width:56px;height:56px;border-radius:16px;
+    background:#fff;box-shadow:0 4px 10px rgba(120,90,150,.12);
+    display:flex;align-items:center;justify-content:center;font-size:30px;
+  }
+  .pal.locked{font-size:22px;color:#d9cfe6;background:#efe9f7;}
+  .pal.plus{
+    background:linear-gradient(160deg,#ffe6f0,#fff3d9);font-size:24px;color:#c58ab0;
+  }
+  .btn{
+    border:none;border-radius:999px;cursor:pointer;
+    font-family:inherit;font-weight:800;color:#fff;
+    background:linear-gradient(180deg,#ff9c6e,#ff6f91);
+    box-shadow:0 9px 20px rgba(255,111,145,.42);
+    padding:17px 46px;font-size:24px;letter-spacing:2px;
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .btn:active{transform:translateY(3px) scale(.98);box-shadow:0 4px 10px rgba(255,111,145,.35);}
+  .btn.small{padding:10px 26px;font-size:15px;box-shadow:0 5px 12px rgba(255,111,145,.35);}
+  .sub{font-size:13px;color:var(--ink-soft);text-align:center;line-height:1.7;margin:0;}
+
+  /* ---------- 游戏页 ---------- */
+  .topbar{width:100%;display:flex;justify-content:space-between;align-items:center;gap:8px;}
+  .mini-btn{border:none;background:#f3ecfb;color:#7a5b96;border-radius:999px;
+    padding:7px 14px;font-size:13px;font-family:inherit;cursor:pointer;font-weight:700;
+    transition:transform .1s;}
+  .mini-btn:active{transform:scale(.93);}
+  .zone-banner{
+    width:100%;text-align:center;border-radius:18px;padding:10px 8px;
+    background:linear-gradient(90deg,var(--zc1,#ffd9e8),var(--zc2,#fff3d1));
+    border:2px dashed rgba(255,255,255,.9);
+    transition:background .5s;
+  }
+  .zone-banner .z-title{font-size:20px;font-weight:800;color:var(--ink);}
+  .zone-banner .z-sub{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+  .zone-banner.pulse{animation:zpulse .5s ease 2;}
+  @keyframes zpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+  .hud{width:100%;display:flex;align-items:center;gap:12px;}
+  .timer{font-size:40px;font-weight:800;color:#ff6f91;line-height:1;flex:none;
+    text-shadow:0 3px 0 #ffe3ec;min-width:96px;}
+  .progress{flex:1;height:16px;border-radius:999px;background:#ffe9f0;overflow:hidden;}
+  .progress>i{display:block;height:100%;width:0%;border-radius:999px;
+    background:linear-gradient(90deg,#7be0a4,#39c46f);transition:width 1s linear;}
+
+  .stage{
+    position:relative;width:100%;max-width:370px;aspect-ratio:370/330;
+    border-radius:26px;overflow:hidden;
+    background:var(--scene-bg,linear-gradient(180deg,#d8f2ff,#fff3f7));
+    transition:background .8s;
+  }
+  .stage svg.face{position:absolute;inset:0;width:100%;height:100%;}
+  .tooth-zone-glow{transition:opacity .4s;}
+  .monster{position:absolute;z-index:5;transform:translate(-50%,-50%);cursor:pointer;
+    animation:hop 1s ease-in-out infinite;}
+  @keyframes hop{0%,100%{transform:translate(-50%,-50%) translateY(0)}50%{transform:translate(-50%,-50%) translateY(-6px)}}
+  .monster.gone{
+    transform:translate(-50%,-50%) scale(0) rotate(300deg);opacity:0;pointer-events:none;
+    transition:transform .55s cubic-bezier(.34,1.56,.64,1), opacity .4s ease;
+    animation:none;
+  }
+  .bubble-fx{
+    position:absolute;z-index:6;pointer-events:none;font-size:20px;
+    transform:translate(-50%,-50%);
+    animation:rise .7s ease forwards;
+  }
+  @keyframes rise{0%{opacity:1;transform:translate(-50%,-50%) scale(.6)}100%{opacity:0;transform:translate(-50%,-120%) scale(1.4)}}
+  .hint{font-size:14px;color:var(--ink-soft);text-align:center;min-height:20px;}
+
+  /* ---------- 结算/盲盒 ---------- */
+  .done-card{display:none;flex-direction:column;align-items:center;gap:12px;text-align:center;padding:4px 0;}
+  .done-card.active{display:flex;}
+  .done-emoji{font-size:64px;animation:pop .6s ease;}
+  @keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+  .done-title{font-size:24px;font-weight:800;color:#ff6f91;}
+  .box-wrap{perspective:600px;}
+  .giftbox{
+    font-size:86px;display:inline-block;cursor:pointer;
+    animation:shake .5s ease-in-out infinite;
+    filter:drop-shadow(0 10px 14px rgba(200,80,120,.3));
+  }
+  @keyframes shake{0%,100%{transform:rotate(-6deg) scale(1)}25%{transform:rotate(6deg) scale(1.05)}50%{transform:rotate(-6deg)}75%{transform:rotate(6deg) scale(1.05)}}
+  .giftbox.opened{animation:boxpop .6s ease forwards;}
+  @keyframes boxpop{0%{transform:scale(1)}60%{transform:scale(1.3)}100%{transform:scale(0);opacity:0}}
+  .reveal{
+    width:120px;height:120px;border-radius:28px;
+    background:linear-gradient(160deg,#fff0f6,#fff8e3);
+    box-shadow:0 12px 26px rgba(210,120,160,.28);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+    animation:pop .55s ease;
+  }
+  .reveal .r-emoji{font-size:58px;line-height:1;}
+  .reveal .r-name{font-size:13px;font-weight:800;color:var(--ink);}
+  .reveal .r-tag{font-size:11px;color:#e8a63c;font-weight:700;}
+  .stars{font-size:13px;color:var(--ink-soft);}
+  .stars b{color:#f5a623;}
+
+  /* ---------- 收集弹层 ---------- */
+  .modal-mask{
+    position:absolute;inset:0;z-index:20;background:rgba(80,50,100,.35);
+    backdrop-filter:blur(2px);display:none;align-items:center;justify-content:center;padding:18px;
+  }
+  .modal-mask.active{display:flex;}
+  .modal{
+    width:100%;max-height:86%;overflow-y:auto;background:#fff;border-radius:26px;
+    padding:18px 16px;display:flex;flex-direction:column;gap:12px;
+  }
+  .modal-head{display:flex;justify-content:space-between;align-items:center;}
+  .modal-head b{font-size:18px;color:var(--ink);}
+  .pal-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
+  .pal-grid .pal{width:100%;height:auto;aspect-ratio:1;font-size:26px;border-radius:14px;}
+  .modal-sub{font-size:12px;color:var(--ink-soft);text-align:center;}
+
+  .confetti{position:absolute;top:-20px;width:10px;height:15px;border-radius:3px;opacity:0;z-index:30;}
+  @keyframes fall{0%{opacity:1;transform:translateY(0) rotate(0)}100%{opacity:0;transform:translateY(620px) rotate(540deg)}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ 主页 ============ -->
+  <section class="screen active" id="screen-home">
+    <div class="logo-row">
+      <svg class="logo-tooth" viewBox="0 0 64 64">
+        <path d="M32 6C20 6 12 14 12 26c0 8 2 12 3 18 1 7 3 14 7 14 4 0 4-9 10-9s6 9 10 9c4 0 6-7 7-14 1-6 3-10 3-18C52 14 44 6 32 6z" fill="#fff" stroke="#e8d9f0" stroke-width="2.5"/>
+        <circle cx="25" cy="26" r="3" fill="#5b4668"/>
+        <circle cx="39" cy="26" r="3" fill="#5b4668"/>
+        <path d="M26 34q6 5 12 0" stroke="#5b4668" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <circle cx="21" cy="32" r="3.5" fill="#ffb6c9" opacity=".8"/>
+        <circle cx="43" cy="32" r="3.5" fill="#ffb6c9" opacity=".8"/>
+      </svg>
+      <h1>牙齿城堡大冒险<small>BRUSH · CASTLE · ADVENTURE</small></h1>
+    </div>
+
+    <div class="week-tag" id="week-tag">🏰 本周场景</div>
+
+    <div class="streak-card">
+      <div class="streak-fire">🔥</div>
+      <div>
+        <div class="streak-num"><span id="streak-num">1</span><i>天</i></div>
+        <div class="streak-label" id="streak-label">连续刷牙小勇士</div>
+      </div>
+      <div style="margin-left:auto;text-align:center;">
+        <div style="font-size:26px;">⭐</div>
+        <div style="font-size:12px;color:var(--ink-soft);">星星 <b id="star-num" style="color:#f5a623;">0</b></div>
+      </div>
+    </div>
+
+    <div class="shelf">
+      <div class="shelf-title"><b>我的小伙伴</b><span id="shelf-count">0 / 30</span></div>
+      <div class="shelf-row" id="shelf-row"></div>
+    </div>
+
+    <button class="btn" id="btn-start">开始冒险 ▶</button>
+    <p class="sub">刷牙就是魔法攻击！小怪会被赶跑，<br>还能点一点它们，加速逃跑哦～</p>
+    <button class="btn small" id="btn-collection" style="background:linear-gradient(180deg,#b48ce0,#8f5fc9);box-shadow:0 6px 14px rgba(143,95,201,.35);">看我的小伙伴 🐾</button>
+  </section>
+
+  <!-- ============ 游戏页 ============ -->
+  <section class="screen" id="screen-brush">
+    <div class="topbar">
+      <button class="mini-btn" id="btn-home">← 回城堡</button>
+      <button class="mini-btn" id="btn-mute">🔊 声音</button>
+    </div>
+    <div class="zone-banner" id="zone-banner">
+      <div class="z-title" id="zone-title">准备出发！</div>
+      <div class="z-sub" id="zone-sub">跟爸爸妈妈一起拿起小牙刷</div>
+    </div>
+    <div class="hud">
+      <div class="timer" id="timer">2:00</div>
+      <div class="progress"><i id="progress-bar"></i></div>
+    </div>
+    <div class="stage" id="stage">
+      <!-- SVG 嘴巴舞台由 JS 注入 -->
+    </div>
+    <p class="hint" id="hint">小怪占领了牙齿城堡，开始刷牙赶走它们！</p>
+  </section>
+
+  <!-- ============ 结算/盲盒 ============ -->
+  <section class="done-card" id="done-card">
+    <div class="done-emoji">🎉</div>
+    <div class="done-title">城堡夺回来啦！</div>
+    <p class="sub" id="done-sub">宝宝把牙齿刷得亮晶晶 ✨<br>快打开宝箱，看看今天的新伙伴吧！</p>
+    <div class="box-wrap" id="box-wrap">
+      <div class="giftbox" id="giftbox">🎁</div>
+    </div>
+    <div id="reveal-slot"></div>
+    <button class="btn" id="btn-again" style="display:none;">回城堡 🏰</button>
+  </section>
+
+  <!-- ============ 收集弹层 ============ -->
+  <div class="modal-mask" id="modal-mask">
+    <div class="modal">
+      <div class="modal-head">
+        <b>我的小伙伴图鉴</b>
+        <button class="mini-btn" id="btn-close-modal">关上 ✕</button>
+      </div>
+      <div class="pal-grid" id="pal-grid"></div>
+      <div class="modal-sub" id="modal-sub"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============ Part 1: 数据与音效 ============ */
+(function(){
+'use strict';
+const TOTAL=120, MONSTERS=8, STEP=TOTAL/MONSTERS;
+const $=id=>document.getElementById(id);
+
+// ---- 四大每周场景（按一年中的第几周轮换，每 7 天自动换新）----
+const SCENES=[
+  {name:'糖果森林', emoji:'🍭', deco:['🍬','🌳','🍭'], sky:'linear-gradient(180deg,#ffe9f3,#fff3d1)',
+   monsters:[
+     {body:'#ff8fab',dark:'#c94f72',horn:'#ffd166'},
+     {body:'#ffb84d',dark:'#c07a10',horn:'#ff8fab'},
+     {body:'#b48ce0',dark:'#7a4fb0',horn:'#ffe08a'},
+     {body:'#ff6b6b',dark:'#b83a3a',horn:'#ffe08a'}]},
+  {name:'海洋泡泡', emoji:'🌊', deco:['🐚','⭐','🫧'], sky:'linear-gradient(180deg,#cdeeff,#dff6ff)',
+   monsters:[
+     {body:'#4aa8ff',dark:'#1a5fc0',horn:'#7be0a4'},
+     {body:'#39c46f',dark:'#1a7a44',horn:'#8fd6ff'},
+     {body:'#5ec9d6',dark:'#25808c',horn:'#ffd166'},
+     {body:'#7c9bff',dark:'#4059c9',horn:'#a8e7ff'}]},
+  {name:'星空夜航', emoji:'🌙', deco:['⭐','🌙','✨'], sky:'linear-gradient(180deg,#3d3a6b,#6b5b9e)',
+   monsters:[
+     {body:'#9b7bd6',dark:'#5a3f96',horn:'#ffe08a'},
+     {body:'#6f7bd9',dark:'#3a459b',horn:'#ffd7f0'},
+     {body:'#c96fd1',dark:'#823a8b',horn:'#a8ffe0'},
+     {body:'#5c6bc0',dark:'#2c3a85',horn:'#ffe08a'}]},
+  {name:'恐龙大陆', emoji:'🦕', deco:['🌿','🌋','🦴'], sky:'linear-gradient(180deg,#d9f2c9,#fff0d1)',
+   monsters:[
+     {body:'#6ab04c',dark:'#2d6a14',horn:'#ffb84d'},
+     {body:'#c9a24c',dark:'#8a6a1a',horn:'#6ab04c'},
+     {body:'#4cb09a',dark:'#1a7a64',horn:'#ffd166'},
+     {body:'#a06b4c',dark:'#6a3a1a',horn:'#9be07a'}]},
+];
+function weekIndex(){
+  const d=new Date();
+  const dayOfYear=Math.floor((d-new Date(d.getFullYear(),0,0))/86400000);
+  return Math.floor(dayOfYear/7)%SCENES.length;
+}
+
+// ---- 刷牙区域引导（每 30 秒换一个区域）----
+const ZONES=[
+  {title:'刷上面的牙齿 ⬆️', sub:'上排小牙，从里往外刷', c1:'#cdeeff', c2:'#e3f6ff', glow:'top'},
+  {title:'刷上面咬一咬 😁', sub:'大牙上面来回刷', c1:'#ffe9f3', c2:'#fff3d1', glow:'top'},
+  {title:'刷下面的牙齿 ⬇️', sub:'下排小牙，从下往上刷', c1:'#d9f2c9', c2:'#eaffd9', glow:'bottom'},
+  {title:'刷下面咬一咬 🍪', sub:'大牙上面来回刷', c1:'#fff0d1', c2:'#ffe9c9', glow:'bottom'},
+];
+
+// ---- 30 种可收集的小伙伴（盲盒奖励）----
+const FRIENDS=[
+  {e:'🐰',n:'蹦蹦兔'},{e:'🐻',n:'抱抱熊'},{e:'🐼',n:'滚滚熊猫'},{e:'🐧',n:'摇摇企鹅'},
+  {e:'🦁',n:'勇敢狮'},{e:'🐯',n:'哒哒虎'},{e:'🐮',n:'哞哞牛'},{e:'🐷',n:'粉粉猪'},
+  {e:'🐸',n:'呱呱蛙'},{e:'🐵',n:'淘淘猴'},{e:'🐔',n:'咯咯鸡'},{e:'🦄',n:'彩虹独角兽'},
+  {e:'🐝',n:'嗡嗡蜂'},{e:'🦋',n:'翩翩蝶'},{e:'🐢',n:'慢慢龟'},{e:'🐬',n:'跳跳海豚'},
+  {e:'🐙',n:'章章鱼'},{e:'🦕',n:'小恐龙'},{e:'🦉',n:'咕咕鸮'},{e:'🐨',n:'懒懒考拉'},
+  {e:'🦊',n:'机灵狐'},{e:'🐹',n:'仓仓鼠'},{e:'🐺',n:'呜呜狼'},{e:'🐴',n:'哒哒马'},
+  {e:'🦖',n:'霸王龙'},{e:'🐳',n:'喷喷鲸'},{e:'🐿️',n:'松松鼠'},{e:'🦩',n:'火烈鸟'},
+  {e:'🐘',n:'壮壮大象'},{e:'🌟',n:'神秘星星'},
+];
+
+// ---- 音效（WebAudio 合成，无需外部资源）----
+let audioCtx=null, muted=false;
+function beep(freq,dur,type,vol){
+  if(muted) return;
+  try{
+    audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();
+    const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+    o.type=type||'sine';o.frequency.value=freq;
+    o.connect(g);g.connect(audioCtx.destination);
+    const t=audioCtx.currentTime;
+    g.gain.setValueAtTime(.0001,t);
+    g.gain.exponentialRampToValueAtTime(vol||.2,t+.02);
+    g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    o.start(t);o.stop(t+dur);
+  }catch(e){}
+}
+function squeak(){beep(500+Math.random()*400,.12,'square',.15);}      // 点中小怪
+function boing(){beep(300,.09,'sine',.18);setTimeout(()=>beep(430,.09,'sine',.18),80);}
+function jingle(){[440,550,660].forEach((f,i)=>setTimeout(()=>beep(f,.1,'triangle'),i*90));}
+function cheer(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,.18,'triangle'),i*110));}
+function fanfare(){[392,523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,.22,'triangle',.22),i*130));}
+/* ============ Part 2: 舞台与小怪 ============ */
+const stage=$('stage');
+let scene=SCENES[weekIndex()];
+
+// 牙齿城堡舞台：一张张开嘴的大脸（SVG 手绘，无外部图片依赖）
+// 牙齿上下两排，方便做"分区高亮"引导
+function buildStage(){
+  stage.style.setProperty('--scene-bg',scene.sky);
+  stage.innerHTML=`
+  <svg class="face" viewBox="0 0 370 330" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="mouthG" cx="50%" cy="45%" r="65%">
+        <stop offset="0%" stop-color="#ff9db4"/><stop offset="100%" stop-color="#e56a8a"/>
+      </radialGradient>
+      <linearGradient id="toothG" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#eef4fa"/>
+      </linearGradient>
+    </defs>
+    <!-- 场景装饰：随周主题换小图标 -->
+    <g id="scene-deco" opacity=".9" font-size="22">${sceneDeco()}</g>
+    <!-- 脸 -->
+    <ellipse cx="185" cy="168" rx="150" ry="150" fill="#ffe0c2"/>
+    <ellipse cx="60"  cy="120" rx="26" ry="20" fill="#ffb6c9" opacity=".55"/>
+    <ellipse cx="310" cy="120" rx="26" ry="20" fill="#ffb6c9" opacity=".55"/>
+    <circle cx="112" cy="86" r="13" fill="#5b4668"/>
+    <circle cx="116" cy="82" r="4.5" fill="#fff"/>
+    <circle cx="258" cy="86" r="13" fill="#5b4668"/>
+    <circle cx="262" cy="82" r="4.5" fill="#fff"/>
+    <path d="M96 60 Q112 50 128 60" stroke="#5b4668" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <path d="M242 60 Q258 50 274 60" stroke="#5b4668" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <!-- 张开的嘴巴（牙齿城堡） -->
+    <g>
+      <ellipse id="mouth-hole" cx="185" cy="205" rx="112" ry="72" fill="url(#mouthG)"/>
+      <ellipse cx="185" cy="205" rx="112" ry="72" fill="none" stroke="#c9506f" stroke-width="4"/>
+      <!-- 上排牙齿 -->
+      <g id="teeth-top">
+        <rect x="115" y="150" width="26" height="34" rx="10" fill="url(#toothG)" stroke="#d8e2ee" stroke-width="2"/>
+        <rect x="146" y="145" width="28" height="40" rx="11" fill="url(#toothG)" stroke="#d8e2ee" stroke-width="2"/>
+        <rect x="179" y="143" width="28" height="42" rx="11" fill="url(#toothG)" stroke="#d8e2ee" stroke-width="2"/>
+        <rect x="212" y="145" width="28" height="40" rx="11" fill="url(#toothG)" stroke="#d8e2ee" stroke-width="2"/>
+        <rect x="246" y="150" width="26" height="34" rx="10" fill="url(#toothG)" stroke="#d8e2ee" stroke-width="2"/>
+      </g>
+      <!-- 下排牙齿 -->
+      <g id="teeth-bottom">
+        <rect x="120" y="238" width="26" height="32" rx="10" fill="url(#toothG)" stroke="#d8e2ee" stroke-width="2"/>
+        <rect x="152" y="236" width="28" height="34" rx="11" fill="url(#toothG)" stroke="#d8e2ee" stroke-width="2"/>
+        <rect x="185" y="236" width="28" height="34" rx="11" fill="url(#toothG)" stroke="#d8e2ee" stroke-width="2"/>
+        <rect x="218" y="236" width="28" height="34" rx="11" fill="url(#toothG)" stroke="#d8e2ee" stroke-width="2"/>
+        <rect x="250" y="238" width="26" height="32" rx="10" fill="url(#toothG)" stroke="#d8e2ee" stroke-width="2"/>
+      </g>
+      <!-- 舌头 -->
+      <ellipse cx="185" cy="262" rx="58" ry="20" fill="#ff8fa8" opacity=".85"/>
+      <path d="M150 262 q35 12 70 0" stroke="#e56a8a" stroke-width="3" fill="none" stroke-linecap="round"/>
+    </g>
+    <!-- 分区高亮层 -->
+    <rect id="glow-top" class="tooth-zone-glow" x="105" y="138" width="176" height="56" rx="16"
+      fill="#ffe08a" opacity="0" style="pointer-events:none"/>
+    <rect id="glow-bottom" class="tooth-zone-glow" x="108" y="228" width="176" height="52" rx="16"
+      fill="#ffe08a" opacity="0" style="pointer-events:none"/>
+  </svg>`;
+}
+function sceneDeco(){
+  const d=scene.deco;
+  return `<text x="22" y="34">${d[0]}</text>
+          <text x="330" y="34">${d[1]}</text>
+          <text x="18" y="316">${d[2]}</text>
+          <text x="332" y="316">${d[0]}</text>`;
+}
+
+// 小怪位置池（百分比坐标，分布在上下牙与舌头上）
+const POS_POOL=[
+  {x:32,y:47},{x:42,y:44},{x:50,y:43},{x:58,y:44},{x:68,y:47},   // 上排牙
+  {x:36,y:74},{x:44,y:76},{x:52,y:76},{x:60,y:76},{x:68,y:74},   // 下排牙
+  {x:50,y:58},{x:62,y:60},{x:38,y:60},                            // 舌头
+];
+function shuffle(a){const r=[...a];for(let i=r.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]];}return r;}
+
+// 生成一只糖果小怪 SVG（圆滚滚 + 角 + 大眼睛）
+function monsterSVG(p,uid,i){
+  const {body,dark,horn}=p;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 64" width="52" height="47">
+  <style>
+    @keyframes eyeB${uid}{0%,88%,100%{transform:scaleY(1)}92%{transform:scaleY(.1)}}
+    .eb${uid}{animation:eyeB${uid} 2.4s ease ${i*0.2}s infinite;transform-box:fill-box;transform-origin:50% 50%}
+  </style>
+  <ellipse cx="35" cy="60" rx="20" ry="3.5" fill="rgba(0,0,0,.15)"/>
+  <path d="M20 16 Q16 2 27 8" stroke="${horn}" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M50 16 Q54 2 43 8" stroke="${horn}" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <ellipse cx="35" cy="34" rx="26" ry="24" fill="${body}"/>
+  <ellipse cx="35" cy="40" rx="17" ry="14" fill="#fff" opacity=".28"/>
+  <g class="eb${uid}">
+    <circle cx="26" cy="30" r="7" fill="#fff"/><circle cx="26" cy="30" r="4" fill="#2a1a30"/>
+    <circle cx="44" cy="30" r="7" fill="#fff"/><circle cx="44" cy="30" r="4" fill="#2a1a30"/>
+    <circle cx="27.5" cy="28" r="1.6" fill="#fff"/><circle cx="45.5" cy="28" r="1.6" fill="#fff"/>
+  </g>
+  <path d="M29 42 Q35 47 41 42" stroke="${dark}" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <circle cx="17" cy="37" r="3" fill="${dark}" opacity=".35"/>
+  <circle cx="53" cy="37" r="3" fill="${dark}" opacity=".35"/>
+</svg>`;
+}
+
+let monsterEls=[];
+function buildMonsters(){
+  monsterEls.forEach(m=>m.el.remove());monsterEls=[];
+  const pos=shuffle(POS_POOL).slice(0,MONSTERS);
+  const pals=shuffle(scene.monsters);
+  pos.forEach((p,i)=>{
+    const el=document.createElement('div');
+    el.className='monster';
+    el.style.left=p.x+'%';el.style.top=p.y+'%';
+    el.style.animationDelay=(i*0.15)+'s';
+    const uid=Math.random().toString(36).slice(2,7);
+    el.innerHTML=monsterSVG(pals[i%pals.length],uid,i);
+    el.addEventListener('pointerdown',()=>tapMonster(i));
+    stage.appendChild(el);
+    monsterEls.push({el,fled:false});
+  });
+}
+function tapMonster(i){
+  const m=monsterEls[i];
+  if(!m||m.fled) return;
+  m.fled=true;
+  m.el.classList.add('gone');
+  squeak();
+  // 泡泡特效
+  const fx=document.createElement('div');
+  fx.className='bubble-fx';
+  fx.style.left=m.el.style.left;fx.style.top=m.el.style.top;
+  fx.textContent=['🫧','✨','💨','💫'][Math.floor(Math.random()*4)];
+  stage.appendChild(fx);setTimeout(()=>fx.remove(),750);
+}
+function autoFlee(n){
+  // 按进度自动赶跑还没被点掉的小怪
+  let fled=monsterEls.filter(m=>m.fled).length;
+  let need=n-fled;
+  for(const m of monsterEls){
+    if(need<=0)break;
+    if(!m.fled){m.fled=true;m.el.classList.add('gone');boing();need--;}
+  }
+}
+/* ============ Part 3: 游戏流程 ============ */
+const screenHome=$('screen-home'), screenBrush=$('screen-brush');
+const timerEl=$('timer'), progressBar=$('progress-bar'), hintEl=$('hint');
+const zoneBanner=$('zone-banner'), zoneTitle=$('zone-title'), zoneSub=$('zone-sub');
+const doneCard=$('done-card');
+
+const HINTS=['小怪占领了牙齿城堡，开始刷牙赶走它们！',
+  '刷得真棒！小怪有点害怕了～',
+  '哇，又有小怪逃跑啦！继续加油！',
+  '小怪快被赶光啦，最后冲一冲！',
+  '太厉害了，城堡马上就夺回来啦！'];
+
+let timer=null, remaining=TOTAL;
+
+function fmt(s){return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
+
+function setZone(idx){
+  const z=ZONES[idx];
+  zoneTitle.textContent=z.title;
+  zoneSub.textContent=z.sub;
+  zoneBanner.style.setProperty('--zc1',z.c1);
+  zoneBanner.style.setProperty('--zc2',z.c2);
+  zoneBanner.classList.remove('pulse');void zoneBanner.offsetWidth;
+  zoneBanner.classList.add('pulse');
+  // 牙齿区域高亮闪烁
+  const g=$('glow-top'),b=$('glow-bottom');
+  [g,b].forEach(el=>{el.style.opacity=0;});
+  const target=z.glow==='top'?g:b;
+  if(target){
+    let n=0;
+    const blink=setInterval(()=>{
+      target.style.opacity=target.style.opacity==='0'?'0.55':'0';
+      if(++n>=6){clearInterval(blink);target.style.opacity='0';}
+    },400);
+  }
+  boing();
+}
+
+function tick(){
+  remaining--;
+  timerEl.textContent=fmt(remaining);
+  progressBar.style.width=((TOTAL-remaining)/TOTAL*100)+'%';
+  const zoneIdx=Math.min(Math.floor((TOTAL-remaining)/30),ZONES.length-1);
+  if(zoneIdx!==tick.lastZone){tick.lastZone=zoneIdx;setZone(zoneIdx);}
+  const fledTarget=Math.floor((TOTAL-remaining)/STEP);
+  autoFlee(fledTarget);
+  hintEl.textContent=HINTS[Math.min(Math.floor((TOTAL-remaining)/TOTAL*HINTS.length),HINTS.length-1)];
+  if(remaining<=0) finish();
+}
+tick.lastZone=-1;
+
+function startGame(){
+  clearInterval(timer);
+  scene=SCENES[weekIndex()];
+  remaining=TOTAL;tick.lastZone=-1;
+  buildStage();buildMonsters();
+  doneCard.classList.remove('active');
+  $('box-wrap').style.display='';
+  $('reveal-slot').innerHTML='';
+  $('btn-again').style.display='none';
+  timerEl.textContent=fmt(remaining);
+  progressBar.style.width='0%';
+  hintEl.textContent=HINTS[0];
+  setZone(0);
+  screenHome.classList.remove('active');
+  screenBrush.classList.add('active');
+  timer=setInterval(tick,1000);
+  jingle();
+}
+
+function finish(){
+  clearInterval(timer);
+  autoFlee(MONSTERS);
+  progressBar.style.width='100%';
+  hintEl.textContent='城堡夺回来啦！牙齿亮晶晶！';
+  screenBrush.classList.remove('active');
+  doneCard.classList.add('active');
+  cheer();
+  launchConfetti();
+  recordBrush();          // 打卡 + 记录可开宝箱
+}
+
+function launchConfetti(){
+  const colors=['#ff9bb3','#ffd166','#7be0a4','#7cc0ff','#c792ea','#ff6b6b'];
+  for(let i=0;i<36;i++){
+    const c=document.createElement('div');
+    c.className='confetti';
+    c.style.left=Math.random()*100+'%';
+    c.style.background=colors[i%colors.length];
+    c.style.animation=`fall ${1.3+Math.random()*1.3}s ease-in ${Math.random()*.5}s forwards`;
+    document.querySelector('.app').appendChild(c);
+    setTimeout(()=>c.remove(),3400);
+  }
+}
+/* ============ Part 4: 盲盒收集与打卡 ============ */
+const KEY='tooth-castle-save-v1';
+let save={friends:[],stars:0,streak:0,lastDay:'',dayBoxes:0};
+try{const raw=localStorage.getItem(KEY);if(raw)save=Object.assign(save,JSON.parse(raw));}catch(e){}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(save));}catch(e){}}
+
+function dayStr(offset){
+  const d=new Date();d.setDate(d.getDate()+offset);
+  return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+}
+// 连续打卡：昨天刷过 → +1；今天已刷过 → 不变；断档 → 重新从 1 开始
+function updateStreak(){
+  const today=dayStr(0);
+  if(save.lastDay===today) return;
+  save.streak=save.lastDay===dayStr(-1)?save.streak+1:1;
+  save.lastDay=today;
+  save.dayBoxes=0;
+  persist();
+}
+function recordBrush(){
+  updateStreak();
+  save.dayBoxes++;    // 每天最多开 2 个宝箱（早晚各一）
+  persist();
+  renderHome();
+}
+function canOpenBox(){return save.dayBoxes<=2;}
+
+// 盲盒：优先抽没收集过的（收集欲），全收集后给星星
+function drawFriend(){
+  const missing=FRIENDS.map((f,i)=>i).filter(i=>!save.friends.includes(i));
+  let idx;
+  if(missing.length){
+    idx=missing[Math.floor(Math.random()*missing.length)];
+    save.friends.push(idx);
+    save.stars+=3;
+    return {f:FRIENDS[idx],isNew:true,star:3};
+  }
+  save.stars+=5;
+  return {f:FRIENDS[Math.floor(Math.random()*FRIENDS.length)],isNew:false,star:5};
+}
+
+function openBox(){
+  const box=$('giftbox');
+  if(!box||box.classList.contains('opened'))return;
+  if(!canOpenBox()){
+    $('reveal-slot').innerHTML=`<div class="reveal"><div class="r-emoji">😴</div>
+      <div class="r-name">今天宝箱开完啦</div><div class="r-tag">明天再来哦</div></div>`;
+    $('box-wrap').style.display='none';
+    $('btn-again').style.display='';
+    return;
+  }
+  const r=drawFriend();
+  persist();
+  box.classList.add('opened');
+  fanfare();
+  launchConfetti();
+  setTimeout(()=>{
+    $('box-wrap').style.display='none';
+    $('reveal-slot').innerHTML=`<div class="reveal">
+      <div class="r-emoji">${r.f.e}</div>
+      <div class="r-name">${r.f.n}</div>
+      <div class="r-tag">${r.isNew?'🎉 新伙伴！':'+'+r.star+' ⭐'}</div>
+    </div>
+    <div class="stars" style="margin-top:6px;">星星：<b>${save.stars}</b> ⭐</div>`;
+    $('btn-again').style.display='';
+    renderHome();
+  },650);
+}
+
+// ---- 主页渲染 ----
+function renderHome(){
+  scene=SCENES[weekIndex()];
+  const names={0:'星期一',1:'星期二',2:'星期三',3:'星期四',4:'星期五',5:'星期六',6:'星期日'};
+  $('week-tag').textContent=`${scene.emoji} 本周场景：${scene.name}（${names[new Date().getDay()]}）`;
+  $('streak-num').textContent=save.streak;
+  $('streak-label').textContent=save.streak===0?'今天开始第一次冒险吧！':(save.streak>=7?'超级刷牙小勇士！':(save.streak>=3?'坚持就是胜利！':'连续刷牙小勇士'));
+  $('star-num').textContent=save.stars;
+  $('shelf-count').textContent=save.friends.length+' / '+FRIENDS.length;
+
+  // 书架：最新的 6 个 + 未收集提示
+  const row=$('shelf-row');row.innerHTML='';
+  const latest=[...save.friends].slice(-6).reverse();
+  latest.forEach(i=>{
+    const d=document.createElement('div');d.className='pal';d.textContent=FRIENDS[i].e;
+    row.appendChild(d);
+  });
+  const plus=document.createElement('div');plus.className='pal plus';
+  plus.textContent=save.friends.length>=FRIENDS.length?'🏆':'＋';
+  row.appendChild(plus);
+}
+
+function renderGrid(){
+  const grid=$('pal-grid');grid.innerHTML='';
+  FRIENDS.forEach((f,i)=>{
+    const d=document.createElement('div');
+    const got=save.friends.includes(i);
+    d.className='pal'+(got?'':' locked');
+    d.textContent=got?f.e:'❓';
+    d.title=got?f.n:'还没收集到';
+    grid.appendChild(d);
+  });
+  const miss=FRIENDS.length-save.friends.length;
+  $('modal-sub').textContent=miss===0
+    ?'哇！全部小伙伴都集齐啦，宝宝是最棒的！🏆'
+    :`还差 ${miss} 个小伙伴，每天刷牙就能开宝盒哦～`;
+}
+
+// ---- 事件绑定 ----
+$('btn-start').addEventListener('click',startGame);
+$('btn-again').addEventListener('click',()=>{
+  doneCard.classList.remove('active');
+  screenHome.classList.add('active');
+});
+$('btn-home').addEventListener('click',()=>{
+  clearInterval(timer);
+  screenBrush.classList.remove('active');
+  screenHome.classList.add('active');
+  renderHome();
+});
+$('btn-mute').addEventListener('click',function(){
+  muted=!muted;this.textContent=muted?'🔇 静音':'🔊 声音';
+});
+$('btn-collection').addEventListener('click',()=>{
+  renderGrid();$('modal-mask').classList.add('active');
+});
+$('btn-close-modal').addEventListener('click',()=>$('modal-mask').classList.remove('active'));
+$('giftbox').addEventListener('pointerdown',openBox);
+
+// 初始化
+renderHome();
+})();
+</script>
+</body>
+</html>
