@@ -67,6 +67,10 @@
   .streak-num{font-size:30px;font-weight:800;color:#ff8a3d;line-height:1;}
   .streak-num i{font-style:normal;font-size:14px;color:var(--ink-soft);font-weight:700;margin-left:3px;}
   .streak-label{font-size:12px;color:var(--ink-soft);margin-top:3px;}
+  .today-badges{display:flex;gap:6px;margin-top:6px;}
+  .tb{font-size:11px;font-weight:700;border-radius:999px;padding:3px 10px;white-space:nowrap;}
+  .tb.ok{background:#e2f8ea;color:#1e9e5a;}
+  .tb.wait{background:#f3ecfb;color:#9a86b3;}
   .shelf{
     width:100%;background:#f6f1fb;border-radius:22px;padding:12px;
     display:flex;flex-direction:column;gap:8px;
@@ -214,7 +218,8 @@
       <div class="streak-fire">🔥</div>
       <div>
         <div class="streak-num"><span id="streak-num">1</span><i>天</i></div>
-        <div class="streak-label" id="streak-label">连续刷牙小勇士</div>
+        <div class="streak-label" id="streak-label">早晚刷牙小勇士</div>
+        <div class="today-badges" id="today-badges"></div>
       </div>
       <div style="margin-left:auto;text-align:center;">
         <div style="font-size:26px;">⭐</div>
@@ -223,7 +228,7 @@
     </div>
 
     <div class="shelf">
-      <div class="shelf-title"><b>我的小伙伴</b><span id="shelf-count">0 / 30</span></div>
+      <div class="shelf-title"><b>我的小伙伴</b><span id="shelf-count">0 / 60</span></div>
       <div class="shelf-row" id="shelf-row"></div>
     </div>
 
@@ -335,6 +340,15 @@ const FRIENDS=[
   {e:'🦊',n:'机灵狐'},{e:'🐹',n:'仓仓鼠'},{e:'🐺',n:'呜呜狼'},{e:'🐴',n:'哒哒马'},
   {e:'🦖',n:'霸王龙'},{e:'🐳',n:'喷喷鲸'},{e:'🐿️',n:'松松鼠'},{e:'🦩',n:'火烈鸟'},
   {e:'🐘',n:'壮壮大象'},{e:'🌟',n:'神秘星星'},
+  // ---- 第二辑（早晚各一次，30 天 × 2 = 60 个正好集齐）----
+  {e:'🦔',n:'刺刺猬'},{e:'🐌',n:'扭扭蜗牛'},{e:'🐊',n:'牙牙鳄'},{e:'🦈',n:'大白鲨'},
+  {e:'🐠',n:'条条鱼'},{e:'🐡',n:'鼓鼓河豚'},{e:'🦀',n:'横横蟹'},{e:'🦞',n:'龙龙虾'},
+  {e:'🦑',n:'墨墨鱿鱼'},{e:'🦦',n:'獭獭水獭'},{e:'🦥',n:'悠悠树懒'},{e:'🐻‍❄️',n:'北北极熊'},
+  {e:'🦌',n:'斑斑小鹿'},{e:'🐐',n:'咩咩山羊'},{e:'🐑',n:'卷卷绵羊'},{e:'🦙',n:'吐吐羊驼'},
+  {e:'🦛',n:'胖胖河马'},{e:'🦏',n:'猛猛犀牛'},{e:'🦘',n:'弹弹袋鼠'},{e:'🐍',n:'弯弯小蛇'},
+  {e:'🦎',n:'变变蜥蜴'},{e:'🐁',n:'皮皮小鼠'},{e:'🐇',n:'白白兔'},{e:'🐤',n:'黄黄小鸭'},
+  {e:'🦆',n:'嘎嘎鸭'},{e:'🦢',n:'雪雪天鹅'},{e:'🦜',n:'学学鹦鹉'},{e:'🦚',n:'美美孔雀'},
+  {e:'🐦',n:'啾啾小鸟'},{e:'🐱',n:'咪咪猫'},
 ];
 
 // ---- 音效（WebAudio 合成，无需外部资源）----
@@ -594,7 +608,8 @@ function launchConfetti(){
 }
 /* ============ Part 4: 盲盒收集与打卡 ============ */
 const KEY='tooth-castle-save-v1';
-let save={friends:[],stars:0,streak:0,lastDay:'',dayBoxes:0};
+let save={friends:[],stars:0,streak:0,lastDay:'',dayBoxes:0,
+          dayDone:{am:false,pm:false},countedToday:false};
 try{const raw=localStorage.getItem(KEY);if(raw)save=Object.assign(save,JSON.parse(raw));}catch(e){}
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(save));}catch(e){}}
 
@@ -602,18 +617,26 @@ function dayStr(offset){
   const d=new Date();d.setDate(d.getDate()+offset);
   return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
 }
-// 连续打卡：昨天刷过 → +1；今天已刷过 → 不变；断档 → 重新从 1 开始
-function updateStreak(){
-  const today=dayStr(0);
-  if(save.lastDay===today) return;
-  save.streak=save.lastDay===dayStr(-1)?save.streak+1:1;
-  save.lastDay=today;
-  save.dayBoxes=0;
-  persist();
-}
+function periodNow(){return (new Date().getHours()<12)?'am':'pm';}
+
+// 一天 = 早上 + 晚上各刷一次；两次都完成，火炬才 +1
 function recordBrush(){
-  updateStreak();
+  const today=dayStr(0);
+  if(save.lastDay!==today){
+    // 新的一天：昨天没刷满两次（或根本没刷）→ 火炬熄灭，重新计
+    const yesterdayCounted=save.lastDay===dayStr(-1)&&save.countedToday;
+    if(!yesterdayCounted) save.streak=0;
+    save.lastDay=today;
+    save.dayDone={am:false,pm:false};
+    save.countedToday=false;
+    save.dayBoxes=0;
+  }
+  save.dayDone[periodNow()]=true;
   save.dayBoxes++;    // 每天最多开 2 个宝箱（早晚各一）
+  if(save.dayDone.am&&save.dayDone.pm&&!save.countedToday){
+    save.streak++;
+    save.countedToday=true;
+  }
   persist();
   renderHome();
 }
@@ -667,9 +690,27 @@ function renderHome(){
   const names={0:'星期一',1:'星期二',2:'星期三',3:'星期四',4:'星期五',5:'星期六',6:'星期日'};
   $('week-tag').textContent=`${scene.emoji} 本周场景：${scene.name}（${names[new Date().getDay()]}）`;
   $('streak-num').textContent=save.streak;
-  $('streak-label').textContent=save.streak===0?'今天开始第一次冒险吧！':(save.streak>=7?'超级刷牙小勇士！':(save.streak>=3?'坚持就是胜利！':'连续刷牙小勇士'));
   $('star-num').textContent=save.stars;
   $('shelf-count').textContent=save.friends.length+' / '+FRIENDS.length;
+
+  // 今日早晚打卡徽章
+  const isToday=save.lastDay===dayStr(0);
+  const amDone=isToday&&save.dayDone&&save.dayDone.am;
+  const pmDone=isToday&&save.dayDone&&save.dayDone.pm;
+  $('today-badges').innerHTML=
+    `<span class="tb ${amDone?'ok':'wait'}">☀️ 早上${amDone?' ✓':''}</span>`+
+    `<span class="tb ${pmDone?'ok':'wait'}">🌙 晚上${pmDone?' ✓':''}</span>`;
+
+  // 文案引导：火炬只有早晚都刷才 +1
+  let label;
+  if(amDone&&pmDone) label='今天早晚都刷完啦，火炬 +1！';
+  else if(amDone) label='早上刷好啦，晚上再刷一次火炬 +1！';
+  else if(pmDone) label='今晚刷好啦，明天早上也要刷哦～';
+  else if(save.streak===0) label='早晚各刷一次，点亮火炬吧！';
+  else if(save.streak>=7) label='超级刷牙小勇士！';
+  else if(save.streak>=3) label='坚持就是胜利！';
+  else label='早晚刷牙小勇士';
+  $('streak-label').textContent=label;
 
   // 书架：最新的 6 个 + 未收集提示
   const row=$('shelf-row');row.innerHTML='';
@@ -696,7 +737,7 @@ function renderGrid(){
   const miss=FRIENDS.length-save.friends.length;
   $('modal-sub').textContent=miss===0
     ?'哇！全部小伙伴都集齐啦，宝宝是最棒的！🏆'
-    :`还差 ${miss} 个小伙伴，每天刷牙就能开宝盒哦～`;
+    :`还差 ${miss} 个小伙伴，早晚各刷一次每天能开 2 个宝盒哦～`;
 }
 
 // ---- 事件绑定 ----
